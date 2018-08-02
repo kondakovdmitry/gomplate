@@ -13,6 +13,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+type orderedItemsKeyType struct{}
+
+var orderedItemsKey = &orderedItemsKeyType{}
+
 func unmarshalObj(obj map[string]interface{}, in string, f func([]byte, interface{}) error) map[string]interface{} {
 	err := f([]byte(in), &obj)
 	if err != nil {
@@ -45,6 +49,40 @@ func JSONArray(in string) []interface{} {
 func YAML(in string) map[string]interface{} {
 	obj := make(map[string]interface{})
 	return unmarshalObj(obj, in, yaml.Unmarshal)
+}
+
+// YAMLOrdered - Unmarshal a YAML Object with support for getting map items in document order
+func YAMLOrdered(in string) map[interface{}]interface{} {
+	var mapSlice yaml.MapSlice
+	err := yaml.Unmarshal([]byte(in), &mapSlice)
+	if err != nil {
+		log.Fatalf("Unable to unmarshal object %s: %v", in, err)
+	}
+	return makeMaps(mapSlice).(map[interface{}]interface{})
+}
+
+func makeMaps(v interface{}) interface{} {
+	if mapSlice, ok := v.(yaml.MapSlice); ok {
+		m := make(map[interface{}]interface{})
+		for i, item := range mapSlice {
+			item.Key = makeMaps(item.Key)
+			item.Value = makeMaps(item.Value)
+			mapSlice[i] = item
+			m[item.Key] = item.Value
+		}
+		m[orderedItemsKey] = mapSlice
+		return m
+	} else if slice, ok := v.([]interface{}); ok {
+		for i, _ := range slice {
+			slice[i] = makeMaps(slice[i])
+		}
+		return slice
+	}
+	return v
+}
+
+func GetYAMLOrderedItems(in map[interface{}]interface{}) yaml.MapSlice {
+	return in[orderedItemsKey].(yaml.MapSlice)
 }
 
 // YAMLArray - Unmarshal a YAML Array

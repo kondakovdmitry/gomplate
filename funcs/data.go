@@ -32,6 +32,8 @@ func AddDataFuncs(f map[string]interface{}, d *data.Data) {
 	f["json"] = DataNS().JSON
 	f["jsonArray"] = DataNS().JSONArray
 	f["yaml"] = DataNS().YAML
+	f["yamlOrdered"] = DataNS().YAMLOrdered
+	f["items"] = data.GetYAMLOrderedItems
 	f["yamlArray"] = DataNS().YAMLArray
 	f["toml"] = DataNS().TOML
 	f["csv"] = DataNS().CSV
@@ -60,6 +62,11 @@ func (f *DataFuncs) JSONArray(in interface{}) []interface{} {
 // YAML -
 func (f *DataFuncs) YAML(in interface{}) map[string]interface{} {
 	return data.YAML(conv.ToString(in))
+}
+
+// YAMLOrdered -
+func (f *DataFuncs) YAMLOrdered(in interface{}) map[interface{}]interface{} {
+	return data.YAMLOrdered(conv.ToString(in))
 }
 
 // YAMLArray -
